@@ -1,4 +1,4 @@
-#include <QTRSensors.h>
+#include <QTRSensors.h> //ÖNEMLİ!!! Elimizdeki en iyi kod. Hızı güzel ve motor sesi yok fakat çizgi izleme namına hiçbir belirti de yok. 
 #include <Arduino.h>
 #include <esp_arduino_version.h>
 
