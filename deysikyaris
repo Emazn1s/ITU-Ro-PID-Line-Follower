@@ -1,0 +1,130 @@
+#include <QTRSensors.h>
+#include <Arduino.h>
+#include <esp_arduino_version.h>
+
+
+#define Kp 0.5
+#define Kd 14
+#define Ki 0.00001
+#define rightMaxSpeed 50000
+#define leftMaxSpeed 50000
+#define rightBaseSpeed 6000// robot için kp ve kd değerlerini tutturduysanız şayet motorların dönmesi gereken hız budur
+#define leftBaseSpeed 6000// yukarıdaki değer ile aynıdır
+#define leftMinSpeed 3000
+#define rightMinSpeed 3000
+
+#define rightMotor1 5
+#define rightMotor2 18
+#define rightMotorPWM 19
+#define leftMotor1 17
+#define leftMotor2 16
+#define leftMotorPWM 4
+#define INTERNAL_LED 2
+
+volatile uint32_t pulseWidth;
+uint32_t prevTime, currentTime, loopTime;
+
+long sure;
+long uzaklik;
+
+QTRSensors qtr;
+
+const uint8_t SensorCount = 8;
+unsigned int sensorValues[SensorCount];
+
+
+
+
+
+void setup()
+{
+  
+  
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){12, 14, 27, 26, 25, 33, 32, 35}, SensorCount);
+  qtr.setEmitterPin(13);
+  pinMode(rightMotor1, OUTPUT);
+  pinMode(rightMotor2, OUTPUT);
+  pinMode(rightMotorPWM, OUTPUT);
+  pinMode(leftMotor1, OUTPUT);
+  pinMode(leftMotor2, OUTPUT);
+  pinMode(leftMotorPWM, OUTPUT);
+  
+
+  pinMode(INTERNAL_LED, OUTPUT);
+  digitalWrite(INTERNAL_LED, HIGH); // turn on Arduino's LED to indicate we are in calibration mode
+
+  for (uint16_t i = 0; i < 200; i++)
+  {
+    qtr.calibrate();
+   
+  }
+  
+  digitalWrite(INTERNAL_LED, LOW); // turn off Arduino's LED to indicate we are through with calibration
+  
+  delay(1000); // Ana döngüye girmeden önce botu konumlandırmak için 1 saniye bekleyin
+}
+
+int lastError = 0;
+void loop()
+{
+  currentTime = micros();
+  loopTime = currentTime - prevTime;
+  prevTime = currentTime;
+
+uint16_t sensorValuesConverted[8];
+for (int i = 0; i < 8; i++) {
+    sensorValuesConverted[i] = static_cast<uint16_t>(sensorValues[i]);
+}
+
+
+
+  unsigned int position = qtr.readLineBlack(sensorValuesConverted);
+
+  int error = position - 3500;
+  int motorSpeed = Kp * error + Kd * (error - lastError)/(loopTime/1e6);
+  
+  lastError = error;
+  int rightMotorSpeed = rightBaseSpeed + motorSpeed;
+  int leftMotorSpeed = leftBaseSpeed - motorSpeed;
+  if (rightMotorSpeed > rightMaxSpeed ) rightMotorSpeed = rightMaxSpeed;
+  if (leftMotorSpeed > leftMaxSpeed ) leftMotorSpeed = leftMaxSpeed;
+  if (rightMotorSpeed < rightMinSpeed) rightMotorSpeed = rightMinSpeed;
+  if (leftMotorSpeed < leftMinSpeed) leftMotorSpeed = leftMinSpeed;
+  
+    digitalWrite(rightMotor1, HIGH);
+    digitalWrite(rightMotor2, LOW);
+    analogWrite(rightMotorPWM, rightMotorSpeed);
+
+    digitalWrite(leftMotor1, HIGH);
+    digitalWrite(leftMotor2, LOW);
+    analogWrite(leftMotorPWM, leftMotorSpeed);
+}
+void wait() {
+      digitalWrite(rightMotor1,LOW);
+    digitalWrite(rightMotor2, LOW);
+   
+
+    digitalWrite(leftMotor1, LOW);
+    digitalWrite(leftMotor2, LOW);
+
+    delay(250);
+}
+void turn_left() {
+      digitalWrite(rightMotor1,HIGH);
+    digitalWrite(rightMotor2, LOW);
+    analogWrite (rightMotorPWM,rightBaseSpeed); 
+
+    digitalWrite(leftMotor1, LOW);
+    digitalWrite(leftMotor2, HIGH);
+    analogWrite (leftMotorPWM,leftBaseSpeed);
+}
+void turn_right() {
+      digitalWrite(rightMotor1,LOW);
+    digitalWrite(rightMotor2, HIGH);
+    analogWrite (rightMotorPWM,rightBaseSpeed);   
+
+    digitalWrite(leftMotor1, HIGH);
+    digitalWrite(leftMotor2, LOW);
+    analogWrite (leftMotorPWM,leftBaseSpeed);    
+}
