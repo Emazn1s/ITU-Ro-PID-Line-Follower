@@ -1,5 +1,4 @@
 #include <QTRSensors.h>
-#include <esp32_qtr.h>
 #define INTERNAL_LED 2
 #include <Arduino.h>
 #include <esp_arduino_version.h>
