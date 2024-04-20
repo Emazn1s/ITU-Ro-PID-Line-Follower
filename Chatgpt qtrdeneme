@@ -22,38 +22,35 @@ void setup() {
   pinMode(leftMotor1, OUTPUT);
   pinMode(leftMotor2, OUTPUT);
 
-  // LED pinini çıkış olarak ayarla
+  // LED pinini çıkış olarak ayarla ve kapat
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
   // Kalibrasyon fazı başlatılıyor
-  for (int i = 0; i < 50; i++) {
-    analogWrite(rightMotor1, 0);
-    analogWrite(rightMotor2, 100);
-    analogWrite(leftMotor1, 100);
-    analogWrite(leftMotor2, 0);
+  for (int calibrateStep = 0; calibrateStep < 2; calibrateStep++) {
+    for (int i = 0; i < 50; i++) {
+      if (calibrateStep == 0) {
+        // İlk adımda sağa dön
+        analogWrite(rightMotor1, 0);
+        analogWrite(rightMotor2, 100);
+        analogWrite(leftMotor1, 100);
+        analogWrite(leftMotor2, 0);
+      } else {
+        // İkinci adımda sola dön
+        analogWrite(rightMotor1, 100);
+        analogWrite(rightMotor2, 0);
+        analogWrite(leftMotor1, 0);
+        analogWrite(leftMotor2, 100);
+      }
 
-    qtr.calibrate();
+      qtr.calibrate();
 
-    // LED'i yanıp söndür
-    digitalWrite(LED_PIN, HIGH);
-    delay(100);
-    digitalWrite(LED_PIN, LOW);
-    delay(100);
-  }
-
-  for (int i = 0; i < 50; i++) {
-    analogWrite(rightMotor1, 100);
-    analogWrite(rightMotor2, 0);
-    analogWrite(leftMotor1, 0);
-    analogWrite(leftMotor2, 100);
-
-    qtr.calibrate();
-
-    // LED'i yanıp söndür
-    digitalWrite(LED_PIN, HIGH);
-    delay(100);
-    digitalWrite(LED_PIN, LOW);
-    delay(100);
+      // LED'i yanıp söndür
+      digitalWrite(LED_PIN, HIGH);
+      delay(100);
+      digitalWrite(LED_PIN, LOW);
+      delay(100);
+    }
   }
 
   // Kalibrasyon sonrası robotu durdur
@@ -61,9 +58,6 @@ void setup() {
   analogWrite(rightMotor2, 0);
   analogWrite(leftMotor1, 0);
   analogWrite(leftMotor2, 0);
-
-  // LED'i kapat
-  digitalWrite(LED_PIN, LOW);
 }
 
 void loop() {
@@ -75,7 +69,12 @@ void loop() {
     output |= (qtr.readLine()[i] > THRESHOLD) ? 1 : 0; // Sensör değerini oku ve biti ayarla
   }
 
-  Serial.println(output, BIN); // Çıkış verisini seri monitöre yazdır, ikili (binary) olarak
+  // Çıkış verisini yan yana boşluklarla seri monitöre yazdır
+  for (int i = qtr.numSensors() - 1; i >= 0; i--) {
+    Serial.print((output >> i) & 1);
+    Serial.print(" ");
+  }
+  Serial.println(); // Satır sonu
 
   delay(100); // 100 milisaniye bekletme
 }
