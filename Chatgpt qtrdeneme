@@ -1,0 +1,81 @@
+#include <QTRSensors.h>
+
+// L298N motor driver için motor pin tanımlamaları
+#define rightMotor1 5
+#define rightMotor2 18
+#define leftMotor1 17
+#define leftMotor2 16
+
+// ESP32 üzerindeki LED pin tanımlamaları
+#define LED_PIN 2 // Örnek olarak GPIO 2 pinini kullanıyoruz
+
+QTRSensors qtr((unsigned char[]) {34, 39, 36, 0, 2, 15}, 6); // QTR sensörleri için pinler
+
+const int THRESHOLD = 800; // Eşik değer
+
+void setup() {
+  Serial.begin(115200); // Seri iletişim başlatılıyor
+
+  // Motor pinleri çıkış olarak ayarlanıyor
+  pinMode(rightMotor1, OUTPUT);
+  pinMode(rightMotor2, OUTPUT);
+  pinMode(leftMotor1, OUTPUT);
+  pinMode(leftMotor2, OUTPUT);
+
+  // LED pinini çıkış olarak ayarla
+  pinMode(LED_PIN, OUTPUT);
+
+  // Kalibrasyon fazı başlatılıyor
+  for (int i = 0; i < 50; i++) {
+    analogWrite(rightMotor1, 0);
+    analogWrite(rightMotor2, 100);
+    analogWrite(leftMotor1, 100);
+    analogWrite(leftMotor2, 0);
+
+    qtr.calibrate();
+
+    // LED'i yanıp söndür
+    digitalWrite(LED_PIN, HIGH);
+    delay(100);
+    digitalWrite(LED_PIN, LOW);
+    delay(100);
+  }
+
+  for (int i = 0; i < 50; i++) {
+    analogWrite(rightMotor1, 100);
+    analogWrite(rightMotor2, 0);
+    analogWrite(leftMotor1, 0);
+    analogWrite(leftMotor2, 100);
+
+    qtr.calibrate();
+
+    // LED'i yanıp söndür
+    digitalWrite(LED_PIN, HIGH);
+    delay(100);
+    digitalWrite(LED_PIN, LOW);
+    delay(100);
+  }
+
+  // Kalibrasyon sonrası robotu durdur
+  analogWrite(rightMotor1, 0);
+  analogWrite(rightMotor2, 0);
+  analogWrite(leftMotor1, 0);
+  analogWrite(leftMotor2, 0);
+
+  // LED'i kapat
+  digitalWrite(LED_PIN, LOW);
+}
+
+void loop() {
+  uint32_t output = 0; // Çıkış verisi için 32-bitlik bir değişken oluşturuluyor
+
+  // Sensörlerden değerler okunuyor ve çıkış verisi oluşturuluyor
+  for (int i = 0; i < qtr.numSensors(); i++) {
+    output <<= 1; // Bir önceki çıkışı sola kaydır
+    output |= (qtr.readLine()[i] > THRESHOLD) ? 1 : 0; // Sensör değerini oku ve biti ayarla
+  }
+
+  Serial.println(output, BIN); // Çıkış verisini seri monitöre yazdır, ikili (binary) olarak
+
+  delay(100); // 100 milisaniye bekletme
+}
