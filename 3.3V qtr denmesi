@@ -2,6 +2,12 @@
 #define INTERNAL_LED 2
 #include <Arduino.h>
 #include <esp_arduino_version.h>
+#define rightMotor1 5
+#define rightMotor2 18
+#define rightMotorPWM 19
+#define leftMotor1 17
+#define leftMotor2 16
+#define leftMotorPWM 4
 // This example is designed for use with six analog QTR sensors. These
 // reflectance sensors should be connected to analog pins A0 to A5. The
 // sensors' emitter control pin (CTRL or LEDON) can optionally be connected to
