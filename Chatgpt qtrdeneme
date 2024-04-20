@@ -1,42 +1,38 @@
 #include <QTRSensors.h>
 
-// L298N motor driver için motor pin tanımlamaları
 #define rightMotor1 5
 #define rightMotor2 18
 #define leftMotor1 17
 #define leftMotor2 16
 
-// ESP32 üzerindeki LED pin tanımlamaları
-#define LED_PIN 2 // Örnek olarak GPIO 2 pinini kullanıyoruz
+#define LED_PIN 2
 
-QTRSensors qtr((unsigned char[]) {34, 39, 36, 0, 2, 15}, 6); // QTR sensörleri için pinler
+QTRSensors qtr;
 
-const int THRESHOLD = 800; // Eşik değer
+const int THRESHOLD = 800;
 
 void setup() {
-  Serial.begin(115200); // Seri iletişim başlatılıyor
+  Serial.begin(115200);
 
-  // Motor pinleri çıkış olarak ayarlanıyor
   pinMode(rightMotor1, OUTPUT);
   pinMode(rightMotor2, OUTPUT);
   pinMode(leftMotor1, OUTPUT);
   pinMode(leftMotor2, OUTPUT);
 
-  // LED pinini çıkış olarak ayarla ve kapat
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // Kalibrasyon fazı başlatılıyor
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){34, 39, 36, 0, 2, 15}, 6);
+
   for (int calibrateStep = 0; calibrateStep < 2; calibrateStep++) {
     for (int i = 0; i < 50; i++) {
       if (calibrateStep == 0) {
-        // İlk adımda sağa dön
         analogWrite(rightMotor1, 0);
         analogWrite(rightMotor2, 100);
         analogWrite(leftMotor1, 100);
         analogWrite(leftMotor2, 0);
       } else {
-        // İkinci adımda sola dön
         analogWrite(rightMotor1, 100);
         analogWrite(rightMotor2, 0);
         analogWrite(leftMotor1, 0);
@@ -45,7 +41,6 @@ void setup() {
 
       qtr.calibrate();
 
-      // LED'i yanıp söndür
       digitalWrite(LED_PIN, HIGH);
       delay(100);
       digitalWrite(LED_PIN, LOW);
@@ -53,7 +48,6 @@ void setup() {
     }
   }
 
-  // Kalibrasyon sonrası robotu durdur
   analogWrite(rightMotor1, 0);
   analogWrite(rightMotor2, 0);
   analogWrite(leftMotor1, 0);
@@ -61,20 +55,21 @@ void setup() {
 }
 
 void loop() {
-  uint32_t output = 0; // Çıkış verisi için 32-bitlik bir değişken oluşturuluyor
+  uint32_t output = 0;
 
-  // Sensörlerden değerler okunuyor ve çıkış verisi oluşturuluyor
-  for (int i = 0; i < qtr.numSensors(); i++) {
-    output <<= 1; // Bir önceki çıkışı sola kaydır
-    output |= (qtr.readLine()[i] > THRESHOLD) ? 1 : 0; // Sensör değerini oku ve biti ayarla
+  uint16_t sensorValues[6];
+  qtr.read(sensorValues);
+
+  for (int i = 0; i < 6; i++) {
+    output <<= 1;
+    output |= (sensorValues[i] > THRESHOLD) ? 1 : 0;
   }
 
-  // Çıkış verisini yan yana boşluklarla seri monitöre yazdır
-  for (int i = qtr.numSensors() - 1; i >= 0; i--) {
+  for (int i = 6 - 1; i >= 0; i--) {
     Serial.print((output >> i) & 1);
     Serial.print(" ");
   }
-  Serial.println(); // Satır sonu
+  Serial.println();
 
-  delay(100); // 100 milisaniye bekletme
+  delay(100);
 }
