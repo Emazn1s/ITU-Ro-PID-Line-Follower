@@ -1,0 +1,166 @@
+#include <QTRSensors.h>
+
+#define Kp 0.040 //0.055 yavaş ama her dönemeci döndü. 90 derecelerde sıkıntı var 0.065, 0.070 her yeri dönüyo  90 derecede ani tepki verip geri girmeye çalışıyo
+#define Kd (Kp*0.33)
+#define rightMaxSpeed 255
+#define leftMaxSpeed 255
+#define rightBaseSpeed 80// robot için kp ve kd değerlerini tutturduysanız şayet motorların dönmesi gereken hız budur
+#define leftBaseSpeed 80// yukarıdaki değer ile aynıdır
+#define leftMinSpeed 0
+#define rightMinSpeed 0
+
+#define rightMotor1 11
+#define rightMotor2 12
+#define rightMotorPWM 10
+#define leftMotor1 8
+#define leftMotor2 7
+#define leftMotorPWM 9
+
+QTRSensors qtr;
+const uint8_t SensorCount = 8;
+uint16_t sensorValues[SensorCount];
+
+
+
+
+
+void setup()
+{ 
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){A7, A6, A5, A4, A3, A2, A1, A0}, SensorCount);
+  qtr.setEmitterPin(4);
+
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(rightMotor1, OUTPUT);
+  pinMode(rightMotor2, OUTPUT);
+  pinMode(rightMotorPWM, OUTPUT);
+  pinMode(leftMotor1, OUTPUT);
+  pinMode(leftMotor2, OUTPUT);
+  pinMode(leftMotorPWM, OUTPUT);
+
+  delay(200);
+
+  digitalWrite(LED_BUILTIN, HIGH);
+  for (uint16_t i = 0; i < 200; i++)
+  {
+    qtr.calibrate();
+  }
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1500);
+}
+int lastError = 0;
+int sens_count = 0;
+void loop()
+{ uint16_t sensor1 = sensorValues[0];
+  uint16_t sensor2 = sensorValues[1];
+  uint16_t sensor3 = sensorValues[2];
+  uint16_t sensor4 = sensorValues[3];
+  uint16_t sensor5 = sensorValues[4];
+  uint16_t sensor6 = sensorValues[5];
+  uint16_t sensor7 = sensorValues[6];
+  uint16_t sensor8 = sensorValues[7];   
+  uint16_t position = qtr.readLineBlack(sensorValues); 
+
+
+  if(sensor1 < 600  && sensor2 < 560  && sensor3 < 560  && sensor4 < 500  && sensor5 < 500  && sensor6 < 500  && sensor7 < 500  && sensor8 < 500){
+  turn_right();
+  }
+  else if (atIntersection()) {
+    if(sens_count >= 7) {go_straight_for_a_while();go_straight_for_a_while();}
+    else {
+      if(isLeftIntersection()){
+          turn_left2();
+      }else{
+        turn_right2();
+      }
+       
+    }
+ 
+ }
+  else if ((sensor5 > 850) && (sensor6 > 850) && (sensor7 > 850) && (sensor8 > 850)) {
+  turn_right2();
+}
+  else { 
+        
+  int error = position - 3500;
+  int motorSpeed = Kp * error + Kd * (error - lastError);
+  
+  lastError = error;
+  int rightMotorSpeed = rightBaseSpeed + motorSpeed;
+  int leftMotorSpeed = leftBaseSpeed - motorSpeed;
+  if (rightMotorSpeed > rightMaxSpeed ) rightMotorSpeed = rightMaxSpeed;
+  if (leftMotorSpeed > leftMaxSpeed ) leftMotorSpeed = leftMaxSpeed;
+  if (rightMotorSpeed < rightMinSpeed) rightMotorSpeed = rightMinSpeed;
+  if (leftMotorSpeed < leftMinSpeed) leftMotorSpeed = leftMinSpeed;
+  
+  digitalWrite(rightMotor1, HIGH);
+  digitalWrite(rightMotor2, LOW);
+  analogWrite(rightMotorPWM, rightMotorSpeed);
+
+  digitalWrite(leftMotor1, HIGH);
+  digitalWrite(leftMotor2, LOW);
+  analogWrite(leftMotorPWM, leftMotorSpeed);
+
+  }
+ 
+
+}
+void turn_right() {
+  digitalWrite(rightMotor1, HIGH);
+  digitalWrite(rightMotor2, LOW);
+    analogWrite (rightMotorPWM,150);   
+
+
+  digitalWrite(leftMotor1, LOW);
+  digitalWrite(leftMotor2, HIGH);
+    analogWrite (leftMotorPWM,150);    
+}
+void turn_right2() {
+  digitalWrite(rightMotor1, HIGH);
+  digitalWrite(rightMotor2, LOW);
+    analogWrite (rightMotorPWM,200);   
+
+
+  digitalWrite(leftMotor1, LOW);
+  digitalWrite(leftMotor2, HIGH);
+    analogWrite (leftMotorPWM, 100);    
+}
+void turn_left2() {
+  digitalWrite(rightMotor1, LOW);
+  digitalWrite(rightMotor2, HIGH);
+    analogWrite (rightMotorPWM,200);   
+
+
+  digitalWrite(leftMotor1, HIGH);
+  digitalWrite(leftMotor2, LOW);
+    analogWrite (leftMotorPWM, 255);    
+}
+void go_straight_for_a_while() {
+  digitalWrite(rightMotor1, HIGH);
+  digitalWrite(rightMotor2, LOW);
+    analogWrite (rightMotorPWM, rightBaseSpeed*3/2 );   
+
+
+  digitalWrite(leftMotor1, HIGH);
+  digitalWrite(leftMotor2, LOW);
+    analogWrite (leftMotorPWM,leftBaseSpeed);    
+}
+int atIntersection() {
+    // Implement logic to detect intersections
+    // Example: If sensors detect a broad black line or a gap, it might be an intersection
+    int activeSensors = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sensorValues[i] > 800) activeSensors++;
+    }
+    sens_count = activeSensors;
+    return activeSensors >= 6  || (sensorValues[0] > 800 && sensorValues[1] > 800 && sensorValues[3] > 800 );
+}
+bool isLeftIntersection() {
+    // Implement logic to detect intersections
+    // Example: If sensors detect a broad black line or a gap, it might be an intersection
+
+      int right=  sensorValues[6] + sensorValues[5] ; 
+      int left= sensorValues[1] + sensorValues[2] ;
+      return left > right &&  (left - right) >= 500 ;
+}
