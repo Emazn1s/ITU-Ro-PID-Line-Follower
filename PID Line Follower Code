@@ -1,6 +1,6 @@
 #include <QTRSensors.h>
 
-#define Kp 0.040 //0.055 yavaş ama her dönemeci döndü. 9 derecelerde sıkıntı var 0.065, 0.070 her yeri dönüyo  90 derecede ani tepki verip geri girmeye çalışıyo
+#define Kp 0.040 //0.055 yavaş ama her dönemeci döndü. 90 derecelerde sıkıntı var 0.065, 0.070 her yeri dönüyo  90 derecede ani tepki verip geri girmeye çalışıyo
 #define Kd (Kp*0.33)
 #define rightMaxSpeed 255
 #define leftMaxSpeed 255
