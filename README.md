@@ -2,7 +2,7 @@ Hi !
 
 This repository includes utilized codes while making PID Line Follower Robot for İTÜ Robot Olympics. 
 
-In this project, we used an Arduino Nano, Pololu 8-A Sensor, L298N Motor Driver and DC Motors.
+In this project, we used an Arduino Nano, Pololu QTR-8A Sensor, L298N Motor Driver and DC Motors.
 
 First code which named " PID Line Follower Code" is the main code that you will use. PID values, PIN numbers, motor speeds could vary for each robot, so we recommend you to consider changing these values.   
 
